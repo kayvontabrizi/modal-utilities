@@ -1,0 +1,10 @@
+[project]
+name = "modal-utilities"
+version = "0.1.0"
+description = "Modal utilities"
+requires-python = ">=3.10"
+dependencies = ["modal"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

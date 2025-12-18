@@ -1,0 +1,10 @@
+*.egg-info
+*.swp
+__pycache__
+.DS_Store
+.env
+.python-version
+.trash
+.vscode
+build
+venv
