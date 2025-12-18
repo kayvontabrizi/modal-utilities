@@ -4,6 +4,15 @@ version = "0.1.0"
 description = "Modal utilities"
 requires-python = ">=3.10"
 dependencies = ["modal"]
+authors = [{name = "Kayvon Tabrizi"}]
+license = "MIT"
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3"
+]
+
+[project.urls]
+Homepage = "https://github.com/kayvontabrizi/modal-utilities"
 
 [build-system]
 requires = ["setuptools>=61.0"]

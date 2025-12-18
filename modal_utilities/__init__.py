@@ -33,13 +33,20 @@ class copy_signature(typing.Generic[F]):
 
 
 @contextlib.contextmanager
-def refreshed_modal_volumes() -> typing.Generator[list[modal.Volume], None, None]:
-    # TODO: the current approach omits any function-specific volumes
-    app = modal.App._get_container_app()  # TODO: should be passed directly
-    assert app, "Modal App can only be accessed from within Modal container!"
+def refreshed_modal_volumes(
+    app: typing.Optional[modal.App] = None,
+    function: typing.Optional[modal.Function] = None,
+) -> typing.Generator[list[modal.Volume], None, None]:
+    if function:
+        volumes_by_mount = function.spec.volumes
+    else:
+        app = app or modal.App._get_container_app()
+        assert app, "Modal App can only be accessed from within Modal container!"
+
+        volumes_by_mount = app._local_state.volumes_default
 
     # TODO: repr is a hacky approach to resolving these volumes
-    volumes = list(map(eval, map(repr, app._local_state.volumes_default.values())))
+    volumes = list(map(eval, map(repr, volumes_by_mount.values())))
 
     for volume in volumes:
         volume.reload()
@@ -62,7 +69,7 @@ def app_function(app: modal.App, *function_args, **function_kwargs):
         @modal.App.function(app, *function_args, **function_kwargs)
         @functools.wraps(function)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            with refreshed_modal_volumes():
+            with refreshed_modal_volumes(function=wrapper):
                 return function(*args, **kwargs)
 
         return wrapper

@@ -7,4 +7,5 @@ __pycache__
 .trash
 .vscode
 build
+dist
 venv
