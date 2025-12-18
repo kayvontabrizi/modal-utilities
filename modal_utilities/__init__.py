@@ -1,6 +1,6 @@
 ## imports
 
-__all__ = ["app_function", "refreshed_modal_volumes"]
+__all__ = ["app_function", "patch_modal_app", "refreshed_modal_volumes"]
 
 # standard
 import contextlib
@@ -75,3 +75,15 @@ def app_function(app: modal.App, *function_args, **function_kwargs):
         return wrapper
 
     return decorator
+
+
+def patch_modal_app(app: modal.App) -> modal.App:
+    original_function_decorator = app.function
+
+    @copy_signature(original_function_decorator)
+    @functools.wraps(original_function_decorator)
+    def patched_function_decorator(*function_args, **function_kwargs):
+        return app_function(app, *function_args, **function_kwargs)
+
+    app.function = patched_function_decorator
+    return app
