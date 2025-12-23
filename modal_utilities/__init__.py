@@ -1,6 +1,12 @@
 ## imports
 
-__all__ = ["app_function", "patch_modal_app", "refreshed_modal_volumes"]
+__all__ = [
+    "app_function",
+    "patch_modal_app",
+    "refreshed_modal_volumes",
+    "get_volume_mount_paths_by_name",
+    "get_configured_volumes",
+]
 
 # standard
 import contextlib
@@ -10,6 +16,9 @@ import typing
 
 # custom
 import modal
+
+# local
+from .volumes import *
 
 
 ## constants
