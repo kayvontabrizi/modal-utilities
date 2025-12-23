@@ -1,10 +1,12 @@
 ## imports
 
 __all__ = [
+    "get_volume_configuration",
     "get_volume_mount_paths_by_name",
     "get_primary_volume_name",
     "get_primary_volume",
     "get_configured_volumes",
+    "get_volume_secrets",
 ]
 
 # standard
@@ -45,7 +47,7 @@ def _get_volume_from_configuration(
     )
 
 
-def _get_volume_configuration():
+def get_volume_configuration():
     volume_configurations = dict[str, dict[str, typing.Any]]()
 
     modal_volume_configuration_path = pathlib.Path(
@@ -74,7 +76,7 @@ def _get_volume_configuration():
 
 
 def get_volume_mount_paths_by_name() -> dict[str, str]:
-    volume_configurations = _get_volume_configuration()
+    volume_configurations = get_volume_configuration()
     mount_paths_by_name = {
         volume_kwargs["name"]: mount_path
         for mount_path, volume_kwargs in volume_configurations.items()
@@ -83,7 +85,7 @@ def get_volume_mount_paths_by_name() -> dict[str, str]:
 
 
 def get_primary_volume_name() -> str:
-    volume_configurations = _get_volume_configuration()
+    volume_configurations = get_volume_configuration()
     volumes_by_name = {
         volume_kwargs["name"]: _get_volume_from_configuration(**volume_kwargs)
         for volume_kwargs in volume_configurations.values()
@@ -106,7 +108,7 @@ def get_primary_volume_name() -> str:
 
 
 def get_primary_volume() -> modal.Volume:
-    volume_configurations = _get_volume_configuration()
+    volume_configurations = get_volume_configuration()
     volumes_by_name = {
         volume_kwargs["name"]: modal.Volume.from_name(**volume_kwargs)
         for volume_kwargs in volume_configurations.values()
@@ -116,9 +118,20 @@ def get_primary_volume() -> modal.Volume:
 
 
 def get_configured_volumes() -> dict[str | pathlib.PurePosixPath, modal.Volume]:
-    volume_configurations = _get_volume_configuration()
+    volume_configurations = get_volume_configuration()
     volumes_by_mount_path: dict[str | pathlib.PurePosixPath, modal.Volume] = {
         mount_path: modal.Volume.from_name(**volume_kwargs)
         for mount_path, volume_kwargs in volume_configurations.items()
     }
     return volumes_by_mount_path
+
+
+def get_volume_secrets():
+    encoded_configuration = base64.encodebytes(
+        json.dumps(get_volume_configuration()).encode()
+    ).decode()
+    return [
+        modal.Secret.from_dict(
+            {"ENCODED_MODAL_VOLUME_CONFIGURATION": encoded_configuration}
+        )
+    ]
