@@ -117,9 +117,13 @@ def get_primary_volume() -> modal.Volume:
     return volumes_by_name[primary_volume_name]
 
 
-def get_configured_volumes() -> dict[str | pathlib.PurePosixPath, modal.Volume]:
+def get_configured_volumes() -> (
+    dict[str | pathlib.PurePosixPath, modal.Volume | modal.CloudBucketMount]
+):
     volume_configurations = get_volume_configuration()
-    volumes_by_mount_path: dict[str | pathlib.PurePosixPath, modal.Volume] = {
+    volumes_by_mount_path: dict[
+        str | pathlib.PurePosixPath, modal.Volume | modal.CloudBucketMount
+    ] = {
         mount_path: modal.Volume.from_name(**volume_kwargs)
         for mount_path, volume_kwargs in volume_configurations.items()
     }

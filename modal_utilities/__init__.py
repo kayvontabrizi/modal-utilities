@@ -6,6 +6,7 @@ import importlib.metadata
 # local
 from .refresh import *
 from .volumes import *
+from .configuration import *
 
 
 ## constants

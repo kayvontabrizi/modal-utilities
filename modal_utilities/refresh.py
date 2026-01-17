@@ -84,9 +84,9 @@ R = typing.TypeVar("R")
 
 @copy_signature(modal.App.function)
 @functools.wraps(modal.App.function)
-def app_function(app: modal.App, *modal_function_args, **modal_function_kwargs):
+def app_function(app: modal.App, *configuration_args, **configuration_kwargs):
     def decorator(function: typing.Callable[P, R]):
-        @modal.App.function(app, *modal_function_args, **modal_function_kwargs)
+        @modal.App.function(app, *configuration_args, **configuration_kwargs)
         @functools.wraps(function)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             with refreshed_modal_volumes(function=wrapper):
@@ -99,7 +99,7 @@ def app_function(app: modal.App, *modal_function_args, **modal_function_kwargs):
 
 @copy_signature(modal.App.cls)
 @functools.wraps(modal.App.cls)
-def app_cls(app: modal.App, *modal_function_args, **modal_function_kwargs):
+def app_cls(app: modal.App, *configuration_args, **configuration_kwargs):
     def class_decorator(cls: typing.Type[T]) -> typing.Type[T]:
         def decorator(function: typing.Callable[P, R]):
             @modal.method()
@@ -114,7 +114,7 @@ def app_cls(app: modal.App, *modal_function_args, **modal_function_kwargs):
             if callable(attr) and not attr_name.startswith("__"):
                 setattr(cls, attr_name, decorator(attr))
 
-        return modal.App.cls(app, *modal_function_args, **modal_function_kwargs)(cls)
+        return modal.App.cls(app, *configuration_args, **configuration_kwargs)(cls)
 
     return class_decorator
 
@@ -125,13 +125,13 @@ def patch_modal_app(app: modal.App) -> modal.App:
 
     @copy_signature(original_cls_decorator)
     @functools.wraps(original_cls_decorator)
-    def patched_cls_decorator(*modal_function_args, **modal_function_kwargs):
-        return app_cls(app, *modal_function_args, **modal_function_kwargs)
+    def patched_cls_decorator(*configuration_args, **configuration_kwargs):
+        return app_cls(app, *configuration_args, **configuration_kwargs)
 
     @copy_signature(original_function_decorator)
     @functools.wraps(original_function_decorator)
-    def patched_function_decorator(*modal_function_args, **modal_function_kwargs):
-        return app_function(app, *modal_function_args, **modal_function_kwargs)
+    def patched_function_decorator(*configuration_args, **configuration_kwargs):
+        return app_function(app, *configuration_args, **configuration_kwargs)
 
     app.cls = patched_cls_decorator
     app.function = patched_function_decorator
