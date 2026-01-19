@@ -57,6 +57,7 @@ def parse_memory(value: str | None) -> int | tuple[int, int] | None:
     return int(value)
 
 
+# TODO: support multiple values
 def parse_gpu(value: str | None) -> str | modal.gpu._GPUConfig | None:
     if value is None:
         return None
@@ -151,8 +152,6 @@ def collect_configuration_arguments(parameters: dict[str, typing.Any]):
 
 
 def preset_modal_configuration(arguments: ModalConfigurationArguments):
-    secrets = [secret for secret in arguments.get("secrets", [])]
-    secrets.extend(modal_utilities_volumes.get_volume_secrets())
     provided_volumes = {k: v for k, v in arguments.get("volumes", {}).items()}
     required_volumes = modal_utilities_volumes.get_configured_volumes()
     volumes = dict[str | pathlib.PurePosixPath, modal.Volume | modal.CloudBucketMount]()
@@ -167,7 +166,6 @@ def preset_modal_configuration(arguments: ModalConfigurationArguments):
             )
         volumes[mount_path] = volume
     volumes.update(required_volumes)
-    arguments["secrets"] = secrets
     arguments["volumes"] = volumes
 
 
@@ -175,13 +173,18 @@ def get_configured_modal_function(
     app_name: str,
     class_name: str,
     function_name: str,
-    parameters: dict[str, typing.Any],
+    parameters: dict[str, typing.Any] | None = None,
     pre_configure=True,
 ) -> modal.Function:
+    if parameters is None:
+        import click
+
+        parameters = click.get_current_context().params
     configuation_kwargs = collect_configuration_arguments(parameters)
     if pre_configure:
         preset_modal_configuration(configuation_kwargs)
     ModalClass = modal.Cls.from_name(app_name, class_name)
     ConfiguredModalClass = ModalClass.with_options(**configuation_kwargs)
+    # TODO: support `with_batching` and `with_concurrency`
     modal_function = getattr(ConfiguredModalClass(), function_name)
     return modal_function
