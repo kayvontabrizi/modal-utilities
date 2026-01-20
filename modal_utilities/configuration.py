@@ -36,9 +36,9 @@ class ModalConfigurationArguments(typing.TypedDict, total=False):
     allow_concurrent_inputs: int
 
 
-class ModalConcurrencyArguments(typing.TypedDict):
+class ModalConcurrencyArguments(typing.TypedDict, total=False):
     max_inputs: int
-    target_inputs: typing.NotRequired[int]
+    target_inputs: int
 
 
 class ModalBatchingArguments(typing.TypedDict):
