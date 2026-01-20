@@ -56,6 +56,12 @@ def refreshed_modal_volumes(
                 volumes.append(volume)
             except modal.exception.NotFoundError:
                 pass
+            except RuntimeError as error:
+                if "not attached" in str(error):
+                    pass
+                else:
+                    raise
+
     else:
         if function:
             volumes_by_mount = function.spec.volumes
