@@ -142,3 +142,35 @@ AllowConcurrentInputs = typing.Annotated[
         hidden=True,
     ),
 ]
+
+MaxInputs = typing.Annotated[
+    int | None,
+    typer.Option(
+        "--max-inputs",
+        help="Maximum concurrent inputs per container. Omit for no concurrency.",
+    ),
+]
+
+TargetInputs = typing.Annotated[
+    int | None,
+    typer.Option(
+        "--target-inputs",
+        help="Target concurrent inputs for autoscaling. Containers burst to max-inputs during scaleup.",
+    ),
+]
+
+MaxBatchSize = typing.Annotated[
+    int | None,
+    typer.Option(
+        "--max-batch-size",
+        help="Maximum inputs combined into a single batch for batched functions.",
+    ),
+]
+
+WaitMs = typing.Annotated[
+    int | None,
+    typer.Option(
+        "--wait-ms",
+        help="Maximum wait time (ms) after first input before executing an unfilled batch.",
+    ),
+]

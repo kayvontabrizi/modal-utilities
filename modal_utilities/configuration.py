@@ -36,6 +36,16 @@ class ModalConfigurationArguments(typing.TypedDict, total=False):
     allow_concurrent_inputs: int
 
 
+class ModalConcurrencyArguments(typing.TypedDict):
+    max_inputs: int
+    target_inputs: typing.NotRequired[int]
+
+
+class ModalBatchingArguments(typing.TypedDict):
+    max_batch_size: int
+    wait_ms: int
+
+
 ## methods
 
 
@@ -57,7 +67,7 @@ def parse_memory(value: str | None) -> int | tuple[int, int] | None:
     return int(value)
 
 
-# TODO: support multiple values
+# TODO: ask Modal to support multiple GPU values in modal.Cls
 def parse_gpu(value: str | None) -> str | modal.gpu._GPUConfig | None:
     if value is None:
         return None
@@ -118,7 +128,13 @@ def parse_region(values: list[str] | None) -> str | typing.Sequence[str] | None:
     return values
 
 
-def collect_configuration_arguments(parameters: dict[str, typing.Any]):
+def collect_configuration_arguments(
+    parameters: dict[str, typing.Any],
+) -> tuple[
+    ModalConfigurationArguments,
+    ModalConcurrencyArguments | None,
+    ModalBatchingArguments | None,
+]:
     parsers = {
         "cpu": parse_cpu,
         "memory": parse_memory,
@@ -142,17 +158,29 @@ def collect_configuration_arguments(parameters: dict[str, typing.Any]):
         for key, parser in parsers.items()
         if key in parameters
     }
-    return ModalConfigurationArguments(
-        **{
-            key: value
-            for key, value in collected_arguments.items()
-            if value is not None and value != {}
-        }  # type: ignore
-    )
+    configuration_kwargs = {
+        key: value
+        for key, value in collected_arguments.items()
+        if value is not None and value != {}
+    }
+
+    concurrency_parameters = {"max_inputs", "target_inputs"}
+    concurrency_kwargs = None
+    if parameters.get("max_inputs"):
+        concurrency_kwargs = {
+            key: parameters.get(key) for key in concurrency_parameters
+        }
+
+    batching_parameters = {"max_batch_size", "wait_ms"}
+    batching_kwargs = {key: parameters.get(key) for key in batching_parameters}
+    if any(value is None for value in batching_kwargs.values()):
+        batching_kwargs = None
+
+    return configuration_kwargs, concurrency_kwargs, batching_kwargs  # type: ignore
 
 
 def preset_modal_configuration(arguments: ModalConfigurationArguments):
-    provided_volumes = {k: v for k, v in arguments.get("volumes", {}).items()}
+    provided_volumes = arguments.get("volumes", {})
     required_volumes = modal_utilities_volumes.get_configured_volumes()
     volumes = dict[str | pathlib.PurePosixPath, modal.Volume | modal.CloudBucketMount]()
     for mount_path, volume in provided_volumes.items():
@@ -180,11 +208,18 @@ def get_configured_modal_function(
         import click
 
         parameters = click.get_current_context().params
-    configuation_kwargs = collect_configuration_arguments(parameters)
+    configuration_kwargs, concurrency_kwargs, batching_kwargs = (
+        collect_configuration_arguments(parameters)
+    )
     if pre_configure:
-        preset_modal_configuration(configuation_kwargs)
+        preset_modal_configuration(configuration_kwargs)
     ModalClass = modal.Cls.from_name(app_name, class_name)
-    ConfiguredModalClass = ModalClass.with_options(**configuation_kwargs)
-    # TODO: support `with_batching` and `with_concurrency`
+    ConfiguredModalClass = ModalClass.with_options(**configuration_kwargs)
+    if concurrency_kwargs:
+        ConfiguredModalClass = ConfiguredModalClass.with_concurrency(
+            **concurrency_kwargs
+        )
+    if batching_kwargs:
+        ConfiguredModalClass = ConfiguredModalClass.with_batching(**batching_kwargs)
     modal_function = getattr(ConfiguredModalClass(), function_name)
     return modal_function
