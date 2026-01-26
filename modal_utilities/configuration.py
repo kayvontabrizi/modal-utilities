@@ -205,9 +205,15 @@ def get_configured_modal_function(
     pre_configure=True,
 ) -> modal.Function:
     if parameters is None:
-        import click
+        parameters = dict[str, typing.Any]()
+        try:
+            import click
 
-        parameters = click.get_current_context().params
+            context = click.get_current_context(silent=True)
+            if context:
+                parameters = context.params
+        except ImportError:
+            pass
     configuration_kwargs, concurrency_kwargs, batching_kwargs = (
         collect_configuration_arguments(parameters)
     )
